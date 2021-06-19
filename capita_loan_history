@@ -7,6 +7,7 @@ use warnings;
 
 use Const::Fast qw<const>;
 
+use Getopt::Long qw<GetOptions :config gnu_getopt>;
 use Web::Scraper qw<scraper process>;
 use URI;
 use LWP::UserAgent;
@@ -14,9 +15,14 @@ use HTTP::CookieJar::LWP;
 use String::Util qw<trim>;
 
 
-const my $LoansURL
-    => URI->new('https://capitadiscovery.co.uk/bradford/account/history');
+const my $Usage           => "$0: [-l LOCATION] CARD-NUMBER PIN\n";
+const my $URLPrefix       => 'https://capitadiscovery.co.uk/';
+const my $URLSuffix       => '/account/history';
+const my $DefaultLocation => 'bradford';
 
+
+GetOptions 'location|l=s' => \(my $location = $DefaultLocation) or die $Usage;
+my $loans_url = URI->new("$URLPrefix\L$location\E$URLSuffix");
 
 my ($card_number, $pin) = @ARGV;
 
@@ -34,7 +40,7 @@ my $login_form =
     };
     result 'form';
   }
-)->scrape($LoansURL);
+)->scrape($loans_url);
 
 my %param = ((map { $_->{name}, $_->{value} } @{$login_form->{field}}),
     barcode => $card_number, pin => $pin);
@@ -46,9 +52,9 @@ my $user_agent = LWP::UserAgent->new(cookie_jar => $cookies);
 my $logged_in_url = $user_agent->$method($login_form->{url}, \%param)
     ->header('Location');
 die "Logging in failed: redirect to: $logged_in_url\n"
-    if $logged_in_url ne $LoansURL;
+    if $logged_in_url ne $loans_url;
 
-my $url = $LoansURL;
+my $url = $loans_url;
 
 
 while ($url)
