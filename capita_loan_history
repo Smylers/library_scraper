@@ -47,8 +47,7 @@ my %param = ((map { $_->{name}, $_->{value} } @{$login_form->{field}}),
     barcode => $card_number, pin => $pin);
 my $method = $login_form->{method};
 
-my $cookies = HTTP::CookieJar::LWP->new;
-my $user_agent = LWP::UserAgent->new(cookie_jar => $cookies);
+my $user_agent = LWP::UserAgent->new(cookie_jar => HTTP::CookieJar::LWP->new);
 
 my $logged_in_url = $user_agent->$method($login_form->{url}, \%param)
     ->header('Location');
