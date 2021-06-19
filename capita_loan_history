@@ -24,6 +24,7 @@ const my $DefaultLocation => 'bradford';
 GetOptions 'location|l=s' => \(my $location = $DefaultLocation) or die $Usage;
 my $loans_url = URI->new("$URLPrefix\L$location\E$URLSuffix");
 
+die $Usage if @ARGV != 2;
 my ($card_number, $pin) = @ARGV;
 
 my $login_form =
