@@ -1,0 +1,89 @@
+#! /usr/bin/perl
+
+# capita_loan_history
+
+use v5.14;
+use warnings;
+
+use Const::Fast qw<const>;
+
+use Web::Scraper qw<scraper process>;
+use URI;
+use LWP::UserAgent;
+use HTTP::CookieJar::LWP;
+use String::Util qw<trim>;
+
+
+const my $LoansURL
+    => URI->new('https://capitadiscovery.co.uk/bradford/account/history');
+
+
+my ($card_number, $pin) = @ARGV;
+
+my $login_form =
+(
+  scraper
+  {
+    process '//form[contains(@class, "loginForm")]', form => scraper
+    {
+      process '//.', url => '@action', method => '@method';
+      process '//input', 'field[]' => scraper
+      {
+        process '//.', 'name' => '@name', 'value' => '@value';
+      };
+    };
+    result 'form';
+  }
+)->scrape($LoansURL);
+
+my %param = ((map { $_->{name}, $_->{value} } @{$login_form->{field}}),
+    barcode => $card_number, pin => $pin);
+my $method = $login_form->{method};
+
+my $cookies = HTTP::CookieJar::LWP->new;
+my $user_agent = LWP::UserAgent->new(cookie_jar => $cookies);
+
+my $logged_in_url = $user_agent->$method($login_form->{url}, \%param)
+    ->header('Location');
+die "Logging in failed: redirect to: $logged_in_url\n"
+    if $logged_in_url ne $LoansURL;
+
+my $url = $LoansURL;
+
+
+while ($url)
+{
+  my $page = $user_agent->get($url);
+  my $result =
+  (
+    scraper
+    {
+      process '//a[@title="next"]', next_page => '@href';
+      process '//table[@id="history"]/tbody', book => scraper
+      {
+        process '//tr', 'book[]' => scraper
+        {
+          process '//th/a', title => ['TEXT', sub { trim $_ }];
+          process '//th/span[@class="author"]', author => 'TEXT';
+          process '//td[@class="accDue"][1]', borrowed => 'TEXT';
+          process '//td[@class="accDue"][2]', returned => 'TEXT';
+        };
+        result 'book';
+      };
+    }
+  )->scrape($page);
+
+  foreach (@{$result->{book}})
+  {
+    # Ignore the dates which are attached to some author's names. Surname,
+    # forename, and dates (if included) are comma-separated, so just grab the
+    # first 2 of those:
+    my ($surname, $forename) = split /, /, $_->{author};
+
+    no warnings qw<uninitialized>;
+    say join "\t",
+        $_->{borrowed}, $_->{returned}, $forename, $surname, $_->{title};
+  }
+
+  $url = $result->{next_page};
+}
