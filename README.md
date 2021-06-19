@@ -1,6 +1,6 @@
 # library_scraper
 
-## Download library book loan history from Capita Prism web interfaces.
+## Download library book loan history from Capita Prism web interfaces
 
 If your public library uses `capitadiscovery.co.uk` for its online accounts,
 you can use this program to download your loan history into a spreadsheet, so
@@ -69,11 +69,11 @@ per line, such as:
 
 The fields are tab-separated, in this order:
 
-• date borrowed
-• date returned
-• author's forename(s)
-• author's surname
-• title
+* date borrowed
+* date returned
+* author's forename(s)
+* author's surname
+* title
 
 You should be able to import the file into a spreadsheet program, such as
 LibreOffice. Select the option for fields being separated by tabs, and it
