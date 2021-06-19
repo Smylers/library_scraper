@@ -12,7 +12,7 @@ use Web::Scraper qw<scraper process>;
 use URI;
 use LWP::UserAgent;
 use HTTP::CookieJar::LWP;
-use String::Util qw<trim>;
+use Text::Trim qw<trim>;
 
 
 const my $Usage           => "$0: [-l LOCATION] CARD-NUMBER PIN\n";
