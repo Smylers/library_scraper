@@ -59,7 +59,6 @@ my $url = $loans_url;
 
 while ($url)
 {
-  my $page = $user_agent->get($url);
   my $result =
   (
     scraper
@@ -77,7 +76,7 @@ while ($url)
         result 'book';
       };
     }
-  )->scrape($page);
+  )->scrape($user_agent->get($url));
 
   foreach (@{$result->{book}})
   {
