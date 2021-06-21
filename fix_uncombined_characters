@@ -1,0 +1,39 @@
+#! /usr/bin/perl -CASiL -n
+
+# fix_uncombined_characters
+#
+# Turn broken text like “Be´doye`re” into “Bédoyère”: where accents and
+# diacritics follow characters that they are supposed to be combined with,
+# combine them.
+
+use v5.20;
+use warnings;
+use experimental qw<signatures>;
+use charnames qw<:full>;
+
+# Potentially replace any character which might have a combining form; that is,
+# all characters above U+7F (so outside the Ascii range), plus the accents that
+# are in Ascii, between the end of the upper-case alphabet and the start of the
+# lower-case one:
+s/[^\x00-Za-\x7F]/combining($&)/ge;
+print $_;
+
+sub combining($char)
+# returns $char, turning it into a combining version of itself if such a
+# character exists
+{
+  my $name = charnames::viacode ord $char;
+
+  # In the Capita Prism data for Bradford Libraries we have an example of a
+  # character which should have a caron on it being followed by this control
+  # code — and no other use of this control code (either for controlling, or in
+  # place of other characters), so just substitute it:
+  $name = "CARON" if $name eq "PARTIAL LINE FORWARD";
+
+  # See if a combining variant of this name is a valid Unicode character. If
+  # not, return the original character unchanged:
+  my $code = charnames::vianame "COMBINING $name" or return $char;
+
+  # We found a combining character, so return that:
+  chr $code;
+}

@@ -80,6 +80,30 @@ LibreOffice. Select the option for fields being separated by tabs, and it
 should put things neatly in separate cells.
 
 
+### Accented Characters
+
+Some accented characters display oddly on the loan history pages on Capita's
+system. This appears to be Capita's bug (they display correctly if you click a
+book's title to display its page). For instance:
+
+* “Michaël Escoffier” displays as “Michae¨l Escoffier”.
+* “Petr	Horáček” displays as “Petr Hora´cek”.
+* “Benoît Charlat” displays as “Benoi^t	Charlat”.
+
+That is, the diacritics are displaying as separate characters after the letter
+they're supposed to be modifying. The `fix_uncombined_characters` script fixes
+this, combining the characters as intended.
+
+Since fixing mistakes in the data is separate to scraping the data from the
+website, and since the fix of combining uncombined accents like this is a
+generic filter which could be applied to any text with this issue, the fix has
+been implemented as a separate program.
+
+Use it as a filter on the output of `capita_loan_history`, like this:
+
+    $ ./capita_loan_history -l bradford 835585264 9253 | ./fix_uncombined_characters > library_books.csv
+
+
 ## Author
 
 © [Smylers](https://twitter.com/Smylers2) 2021.
