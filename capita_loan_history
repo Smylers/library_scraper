@@ -4,6 +4,7 @@
 
 use v5.14;
 use warnings;
+use open qw<:locale>;
 
 use Const::Fast qw<const>;
 
