@@ -2,14 +2,14 @@
 
 # capita_loan_history
 
-use v5.14;
+use v5.24;
 use warnings;
 use open qw<:locale>;
 
 use Const::Fast qw<const>;
 
 use Getopt::Long qw<GetOptions :config gnu_getopt>;
-use Web::Scraper qw<scraper process>;
+use Web::Query qw<wq>;
 use URI;
 use LWP::UserAgent;
 use HTTP::CookieJar::LWP;
@@ -31,24 +31,7 @@ my ($card_number, $pin) = @ARGV;
 # To access the user's account, we need to log in. Attempt to view the loan
 # history page and it will redirect to a log-in form (which, on success, will
 # redirect back to the requested page).
-my $login_form =
-(
-  scraper
-  {
-    # We want the <form> with this class:
-    process '//form[contains(@class, "loginForm")]', form => scraper
-    {
-      # Grab the URL the <form> submits to, the HTTP method, and the names and
-      # values of all the contained <input> elements:
-      process '//.', url => '@action', method => '@method';
-      process '//input', 'field[]' => scraper
-      {
-        process '//.', 'name' => '@name', 'value' => '@value';
-      };
-    };
-    result 'form';
-  }
-)->scrape($loans_url);
+my $login_form = (wq $loans_url)->find('form.loginForm');
 
 # A logged-in user is tracked using cookies, so we need a user-agent with a
 # cookie jar:
@@ -57,10 +40,15 @@ my $user_agent = LWP::UserAgent->new(cookie_jar => HTTP::CookieJar::LWP->new);
 # Submit the log-in <form>, using the found <input> elements, adding in the
 # user's library card number and pin into the relevant fields, and see where it
 # redirects us to:
-my %param = ((map { $_->{name}, $_->{value} } @{$login_form->{field}}),
-    barcode => $card_number, pin => $pin);
-my $method = $login_form->{method};
-my $logged_in_url = $user_agent->$method($login_form->{url}, \%param)
+my %param =
+(
+  $login_form->find('input')
+      ->map(sub { $_->attr('name') => $_->attr('value') })->@*,
+  barcode => $card_number,
+  pin     => $pin,
+);
+my $method = $login_form->attr('method');
+my $logged_in_url = $user_agent->$method($login_form->attr('action'), \%param)
     ->header('Location');
 
 # If logging in succeeded, this will have redirected us back to the URL we
@@ -73,49 +61,25 @@ die "Logging in failed: redirect to: $logged_in_url\n"
 my $url = $loans_url;
 while ($url)
 {
-  my $result =
+  my $page = wq $user_agent->get($url)->decoded_content;
+
+  # The loan history is in a <table>, with each <tr> containing details of a
+  # book. Restrict to <tbody>, to avoid grabbing the headers:
+  $page->find('table#history > tbody > tr')->each
   (
-    scraper
+    sub
     {
-      # Only 10 books are listed at a time; if there are more there'll be a
-      # link with the title ‘next’; grab the URL it links to:
-      process '//a[@title="next"]', next_page => '@href';
+      my $title = trim $_->find('th a')->text;
+      my ($surname, $forename) = split /, /, $_->find('th span.author')->text;
+      my ($borrowed, $returned) = $_->find('td.accDue')->text;
 
-      # The loan history is in a <table>, with each <tr> containing details of
-      # a book. Restrict to <tbody>, to avoid grabbing the headers:
-      process '//table[@id="history"]/tbody/tr', 'book[]' => scraper
-      {
-        # There's a <th> on each row with the title and author. The title links
-        # to the book's page in the catalogue, so grab the <a>'s contents,
-        # removing spaces:
-        process '//th/a', title => ['TEXT', sub { trim $_ }];
-
-        # The author is in the same <th> outside of the <a>, in a handy
-        # <span> (and without any extraneous spaces):
-        process '//th/span[@class="author"]', author => 'TEXT';
-
-        # The borrowed and returned dates are in separate <td>-s. Each have
-        # the same class, so grab them in order:
-        process '//td[@class="accDue"][1]', borrowed => 'TEXT';
-        process '//td[@class="accDue"][2]', returned => 'TEXT';
-      };
+      no warnings qw<uninitialized>; # Some authors don't have forenames
+      say join "\t", $borrowed, $returned, $forename, $surname, $title;
     }
-  )->scrape($user_agent->get($url));
+  );
 
-  # Emit each book as a tab-separated line:
-  foreach (@{$result->{book}})
-  {
-    # Ignore the dates which are attached to some author's names. Surname,
-    # forename, and dates (if included) are comma-separated, so just grab the
-    # first 2 of those:
-    my ($surname, $forename) = split /, /, $_->{author};
-
-    no warnings qw<uninitialized>; # Some authors don't have forenames
-    say join "\t",
-        $_->{borrowed}, $_->{returned}, $forename, $surname, $_->{title};
-  }
-
-  # If there was a next page link, go round again with its URL; the last page
-  # won't have such a link, ending the loop:
-  $url = $result->{next_page};
+  # Only 10 books are listed at a time; if there are more there'll be a link
+  # with the title ‘next’ — in which case get the URL it links to, for next
+  # time round. The last page won't have such a link, ending the loop:
+  $url = $page->find('a[title=next]')->attr('href');
 }
