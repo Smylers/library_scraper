@@ -83,25 +83,21 @@ while ($url)
 
       # The loan history is in a <table>, with each <tr> containing details of
       # a book. Restrict to <tbody>, to avoid grabbing the headers:
-      process '//table[@id="history"]/tbody', book => scraper
+      process '//table[@id="history"]/tbody/tr', 'book[]' => scraper
       {
-        process '//tr', 'book[]' => scraper
-        {
-          # There's a <th> on each row with the title and author. The title
-          # links to the book's page in the catalogue, so grab the <a>'s
-          # contents, removing spaces:
-          process '//th/a', title => ['TEXT', sub { trim $_ }];
+        # There's a <th> on each row with the title and author. The title links
+        # to the book's page in the catalogue, so grab the <a>'s contents,
+        # removing spaces:
+        process '//th/a', title => ['TEXT', sub { trim $_ }];
 
-          # The author is in the same <th> outside of the <a>, in a handy
-          # <span> (and without any extraneous spaces):
-          process '//th/span[@class="author"]', author => 'TEXT';
+        # The author is in the same <th> outside of the <a>, in a handy
+        # <span> (and without any extraneous spaces):
+        process '//th/span[@class="author"]', author => 'TEXT';
 
-          # The borrowed and returned dates are in separate <td>-s. Each have
-          # the same class, so grab them in order:
-          process '//td[@class="accDue"][1]', borrowed => 'TEXT';
-          process '//td[@class="accDue"][2]', returned => 'TEXT';
-        };
-        result 'book';
+        # The borrowed and returned dates are in separate <td>-s. Each have
+        # the same class, so grab them in order:
+        process '//td[@class="accDue"][1]', borrowed => 'TEXT';
+        process '//td[@class="accDue"][2]', returned => 'TEXT';
       };
     }
   )->scrape($user_agent->get($url));
