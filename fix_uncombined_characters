@@ -1,4 +1,4 @@
-#! /usr/bin/perl -CASiL -n
+#! /usr/bin/perl -CASiL -p
 
 # fix_uncombined_characters
 #
@@ -16,7 +16,6 @@ use charnames qw<:full>;
 # are in Ascii, between the end of the upper-case alphabet and the start of the
 # lower-case one:
 s/[^\x00-Za-\x7F]/combining($&)/ge;
-print $_;
 
 sub combining($char)
 # returns $char, turning it into a combining version of itself if such a
