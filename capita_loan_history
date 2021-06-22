@@ -68,8 +68,8 @@ while ($url)
   (
     sub
     {
-      my $title = trim $_->find('th a')->text;
-      my ($surname, $forename) = split /, /, $_->find('th span.author')->text;
+      my $title                 = trim $_->find('th a')->text;
+      my ($surname, $forename)  = split /, /, $_->find('th span.author')->text;
       my ($borrowed, $returned) = $_->find('td.accDue')->text;
 
       no warnings qw<uninitialized>; # Some authors don't have forenames
