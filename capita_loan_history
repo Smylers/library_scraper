@@ -10,7 +10,6 @@ use Const::Fast qw<const>;
 
 use Getopt::Long qw<GetOptions :config gnu_getopt>;
 use Web::Query qw<wq>;
-use URI;
 use LWP::UserAgent;
 use HTTP::CookieJar::LWP;
 use Text::Trim qw<trim>;
@@ -23,7 +22,7 @@ const my $DefaultLocation => 'bradford';
 
 
 GetOptions 'location|l=s' => \(my $location = $DefaultLocation) or die $Usage;
-my $loans_url = URI->new("$URLPrefix\L$location\E$URLSuffix");
+my $loans_url = "$URLPrefix\L$location\E$URLSuffix";
 
 die $Usage if @ARGV != 2;
 my ($card_number, $pin) = @ARGV;

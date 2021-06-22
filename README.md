@@ -17,7 +17,7 @@ Specifically, Bradford libraries are turning off their Capita system on Monday
 ## Installing
 
 `capita_loan_history` is written in Perl, so requires `perl` to be installed,
-along with these Perl modules from Cpan: `Getopt::Long`, `Web::Query`, `URI`,
+along with these Perl modules from Cpan: `Getopt::Long`, `Web::Query`,
 `LWP::UserAgent`, `HTTP::CookieJar::LWP`, and `Text::Trim`.
 
 ### Linux
@@ -25,7 +25,7 @@ along with these Perl modules from Cpan: `Getopt::Long`, `Web::Query`, `URI`,
 On Ubuntu and other Debian-based systems, Perl and the required modules can be
 installed with:
 
-    $ sudo apt install perl libweb-query-perl liburi-perl libwww-perl libhttp-cookiejar-perl libtext-trim-perl
+    $ sudo apt install perl libweb-query-perl libwww-perl libhttp-cookiejar-perl libtext-trim-perl
 
 Then grab the `capita_loan_history` file from this repository.
 
